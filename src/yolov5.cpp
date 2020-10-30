@@ -5,14 +5,15 @@
 #include "yolov5.h"
 #include <iostream>
 #include "cuda_runtime_api.h"
-#include "common.hpp"
+#include "common.h"
 #include "logging.h"
+#include "yololayer.h"
 
-static const int OUTPUT_SIZE = 1000;
 static Logger gLogger;
 const char* inputName = "data";
 const char* outputName = "prob";
 
+static const int OUTPUT_SIZE = Yolo::MAX_OUTPUT_BBOX_COUNT * sizeof(Yolo::Detection) / sizeof(float) + 1;  // we assume the yololayer outputs no more than MAX_OUTPUT_BBOX_COUNT boxes that conf >= 0.1
 
 
 ICudaEngine* Yolov5::createEngine_s(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt,std::string weights ,int height,int width){
@@ -129,7 +130,7 @@ void Yolov5::loadWeightsToEngineFile(std::string weightsFile, std::string engine
     engineStream.write(reinterpret_cast<const char*>(model->data()), model->size());
     model->destroy();
 }
-/*
+
 void Yolov5::init(std::string engineFile) {
     cudaSetDevice(0);
     char *trtModelStream{ nullptr };
@@ -167,4 +168,3 @@ void Yolov5::unload() {
     this->engine->destroy();
     this->runtime->destroy();
 }
-*/

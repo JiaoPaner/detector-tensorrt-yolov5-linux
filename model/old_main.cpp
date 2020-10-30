@@ -2,7 +2,7 @@
 #include <chrono>
 #include "cuda_runtime_api.h"
 #include "logging.h"
-#include "common.hpp"
+#include "common.h"
 
 #define USE_FP16  // comment out this if want to use FP32
 #define DEVICE 0  // GPU id
@@ -411,7 +411,7 @@ void doInference(IExecutionContext& context, cudaStream_t& stream, void **buffer
     cudaStreamSynchronize(stream);
 }
 
-int main(int argc, char** argv) {
+int test_main(int argc, char** argv) {
     cudaSetDevice(DEVICE);
     // create a model using the API directly and serialize it to a stream
     char *trtModelStream{ nullptr };
