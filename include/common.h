@@ -9,7 +9,6 @@
 #include <map>
 #include <sstream>
 #include <vector>
-#include <dirent.h>
 #include "NvInfer.h"
 #include "yolo_layer.h"
 

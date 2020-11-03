@@ -9,6 +9,8 @@
 #include "logging.h"
 #include "yolo_layer.h"
 #include "utils.h"
+#include "cJSON.h"
+#include "labels.h"
 
 static Logger gLogger;
 const char* inputName = "data";
@@ -17,11 +19,11 @@ const char* outputName = "prob";
 static const int OUTPUT_SIZE = Yolo::MAX_OUTPUT_BBOX_COUNT * sizeof(Yolo::Detection) / sizeof(float) + 1;  // we assume the yololayer outputs no more than MAX_OUTPUT_BBOX_COUNT boxes that conf >= 0.1
 
 
-ICudaEngine* Yolov5::createEngine_s(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt,std::string weights ,int height,int width){
+ICudaEngine* Yolov5::createEngine_s(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt,std::string weights){
     INetworkDefinition* network = builder->createNetworkV2(0U);
 
     // Create input tensor of shape {3, INPUT_H, INPUT_W} with name INPUT_BLOB_NAME
-    ITensor* data = network->addInput(inputName, dt, Dims3{ 3, height, width });
+    ITensor* data = network->addInput(inputName, dt, Dims3{ 3, Yolo::INPUT_HEIGHT, Yolo::INPUT_WIDTH });
     assert(data);
 
     std::map<std::string, Weights> weightMap = loadWeights(weights);
@@ -89,6 +91,10 @@ ICudaEngine* Yolov5::createEngine_s(unsigned int maxBatchSize, IBuilder* builder
 #ifdef USE_FP16
     config->setFlag(BuilderFlag::kFP16);
 #endif
+
+#ifdef USE_FP32
+    config->setFlag(BuilderFlag::kFP32);
+#endif
     std::cout << "Building engine, please wait for a while..." << std::endl;
     ICudaEngine* engine = builder->buildEngineWithConfig(*network, *config);
     std::cout << "Build engine successfully!" << std::endl;
@@ -103,7 +109,7 @@ ICudaEngine* Yolov5::createEngine_s(unsigned int maxBatchSize, IBuilder* builder
     return engine;
 }
 
-void Yolov5::loadWeightsToEngineFile(std::string weightsFile, std::string engineFileName, int height, int width) {
+void Yolov5::loadWeightsToEngineFile(std::string weightsFile, std::string engineFileName) {
     cudaSetDevice(0);
     IHostMemory* model{ nullptr };
     IHostMemory** modelStream = &model;
@@ -112,7 +118,7 @@ void Yolov5::loadWeightsToEngineFile(std::string weightsFile, std::string engine
     IBuilderConfig* config = builder->createBuilderConfig();
 
     // Create model to populate the network, then set the outputs and create an engine
-    ICudaEngine* engine = createEngine_s(1, builder, config, DataType::kFLOAT,weightsFile,height,width);
+    ICudaEngine* engine = createEngine_s(1, builder, config, DataType::kFLOAT,weightsFile);
 
     //ICudaEngine* engine = createEngine(maxBatchSize, builder, config, DataType::kFLOAT);
     assert(engine != nullptr);
@@ -156,15 +162,72 @@ void Yolov5::init(std::string engineFile) {
     assert(this->engine->getNbBindings() == 2);
 }
 
-void Yolov5::doInference(cudaStream_t &stream, void **buffers, float *input, float *output,int height,int width,int channels) {
+char * Yolov5::doInference(cv::Mat image,float confThresh,int channels) {
+
+    size_t size = channels * Yolo::INPUT_HEIGHT * Yolo::INPUT_WIDTH;
+
+    float input[size];
+    createInputImage(input,image);
+
+    float prob[1 * OUTPUT_SIZE];
+
+    // In order to bind the buffers, we need to know the names of the input and output tensors.
+    // Note that indices are guaranteed to be less than IEngine::getNbBindings()
+    const int inputIndex = this->engine->getBindingIndex(inputName);
+    const int outputIndex = this->engine->getBindingIndex(outputName);
+    assert(inputIndex == 0);
+    assert(outputIndex == 1);
+    // Create GPU buffers on device
+    CHECK(cudaMalloc(&this->buffers[inputIndex], size * sizeof(float)));
+    CHECK(cudaMalloc(&this->buffers[outputIndex], 1 * OUTPUT_SIZE * sizeof(float)));
+    // Create stream
+
+    CHECK(cudaStreamCreate(&this->stream));
+
     // DMA input batch data to device, infer on the batch asynchronously, and DMA output back to host
-    CHECK(cudaMemcpyAsync(buffers[0], input, 1 * channels * height * width * sizeof(float), cudaMemcpyHostToDevice, stream));
-    this->context->enqueue(1, buffers, stream, nullptr);
-    CHECK(cudaMemcpyAsync(output, buffers[1], 1 * OUTPUT_SIZE * sizeof(float), cudaMemcpyDeviceToHost, stream));
+    CHECK(cudaMemcpyAsync(this->buffers[0], input, 1 * size * sizeof(float), cudaMemcpyHostToDevice, stream));
+    this->context->enqueue(1, this->buffers, stream, nullptr);
+    CHECK(cudaMemcpyAsync(prob, this->buffers[1], 1 * OUTPUT_SIZE * sizeof(float), cudaMemcpyDeviceToHost, stream));
     cudaStreamSynchronize(stream);
+
+    std::vector<Yolo::Detection> batch_res;
+    nms(batch_res, prob, confThresh, 0.4);
+
+    for (size_t j = 0; j < batch_res.size(); j++) {
+        cv::Rect r = get_rect(image, batch_res[j].bbox);
+        cv::rectangle(image, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
+        cv::putText(image, std::to_string((int)batch_res[j].class_id), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
+    }
+    cv::imwrite("_output.jpg", image);
+
+    cJSON  *result = cJSON_CreateObject(), *items = cJSON_CreateArray();
+    for (int i = 0; i < batch_res.size(); ++i) {
+        cJSON  *item = cJSON_CreateObject();
+        cv::Rect rect = get_rect(image, batch_res[i].bbox);
+        int labelIndex = batch_res[i].class_id;
+        cJSON_AddStringToObject(item, "label",labels.at(labelIndex).c_str());
+        cJSON_AddNumberToObject(item, "score", batch_res[i].conf);
+        cJSON  *location = cJSON_CreateObject();
+        cJSON_AddNumberToObject(location, "x", rect.x);
+        cJSON_AddNumberToObject(location, "y", rect.y);
+        cJSON_AddNumberToObject(location, "width", rect.width);
+        cJSON_AddNumberToObject(location, "height", rect.height);
+        cJSON_AddItemToObject(item, "location", location);
+        cJSON_AddItemToArray(items, item);
+    }
+    cJSON_AddNumberToObject(result, "code", 0);
+    cJSON_AddStringToObject(result, "msg", "success");
+    cJSON_AddItemToObject(result, "data", items);
+    char *resultJson = cJSON_PrintUnformatted(result);
+    return resultJson;
 }
 
 void Yolov5::unload() {
+    cudaStreamDestroy(stream);
+    const int inputIndex = this->engine->getBindingIndex(inputName);
+    const int outputIndex = this->engine->getBindingIndex(outputName);
+    CHECK(cudaFree(buffers[inputIndex]));
+    CHECK(cudaFree(buffers[outputIndex]));
     this->context->destroy();
     this->engine->destroy();
     this->runtime->destroy();

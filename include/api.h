@@ -11,14 +11,15 @@ extern "C" {
 /**
  * common api
  */
-int init(const char* model_path);
-int unload();
+void loadWeightsToEngineFile(const char* weightsFile,const char* engineFileName);
+void init(const char* model_path);
+void unload();
 
 /**
  * detection api
  */
-char* detectByBase64(const char* base64_data, float min_score = 0.9);
-char* detectByFile(const char* file, float min_score = 0.9);
+char* detectByBase64(const char* base64_data, float min_score = 0.5);
+char* detectByFile(const char* file, float min_score = 0.5);
 
 }
 

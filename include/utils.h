@@ -3,10 +3,12 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include <algorithm>
 #include <cudnn.h>
 #include <opencv2/opencv.hpp>
 #include "yolo_layer.h"
+#include <dirent.h>
 
 #ifndef CUDA_CHECK
 
@@ -35,13 +37,15 @@
 
 int read_files_in_dir(const char *p_dir_name, std::vector<std::string> &file_names);
 cv::Mat preprocess_img(cv::Mat& img);
-
+void createInputImage(float* input, cv::Mat image);
 cv::Rect get_rect(cv::Mat& img, float bbox[4]);
 
 float iou(float lbox[4], float rbox[4]);
 bool cmp(const Yolo::Detection& a, const Yolo::Detection& b);
 void nms(std::vector<Yolo::Detection>& res, float *output, float conf_thresh, float nms_thresh = 0.5);
 
+std::string base64Decode(const char *Data, int DataByte);
+cv::Mat base64ToMat(std::string &base64_data);
 
 namespace Tn{
     class Profiler : public nvinfer1::IProfiler{

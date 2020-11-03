@@ -7,19 +7,22 @@
 
 #include "NvInfer.h"
 #include <string>
+#include <opencv2/opencv.hpp>
 using namespace nvinfer1;
 
 class Yolov5 {
     public:
-        void loadWeightsToEngineFile(std::string weightsFile,std::string engineFileName,int height,int width);
+        void loadWeightsToEngineFile(std::string weightsFile,std::string engineFileName);
         void init(std::string engineFile);
         void unload();
-        void doInference(cudaStream_t& stream, void **buffers, float* input, float* output,int height,int width,int channels);
+        char * doInference(cv::Mat image,float confThresh = 0.5f,int channels = 3);
+    private:
+        ICudaEngine* createEngine_s(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt,std::string weights);
         IRuntime* runtime{nullptr};
         ICudaEngine* engine{nullptr};
         IExecutionContext* context{nullptr};
-    private:
-        ICudaEngine* createEngine_s(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt,std::string weights ,int height,int width);
+        cudaStream_t stream;
+        void* buffers[2];
 
 };
 

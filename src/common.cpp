@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <string.h>
 #include <math.h>
+#include <utils.h>
+
 // TensorRT weight files have a simple space delimited format:
 // [type] [size] <data x size in hex>
 std::map<std::string, Weights> loadWeights(const std::string file) {
@@ -98,10 +100,10 @@ ILayer* convBlock(INetworkDefinition *network, std::map<std::string, Weights>& w
 }
 
 ILayer* focus(INetworkDefinition *network, std::map<std::string, Weights>& weightMap, ITensor& input, int inch, int outch, int ksize, std::string lname) {
-    ISliceLayer *s1 = network->addSlice(input, Dims3{ 0, 0, 0 }, Dims3{ inch, Yolo::INPUT_H / 2, Yolo::INPUT_W / 2 }, Dims3{ 1, 2, 2 });
-    ISliceLayer *s2 = network->addSlice(input, Dims3{ 0, 1, 0 }, Dims3{ inch, Yolo::INPUT_H / 2, Yolo::INPUT_W / 2 }, Dims3{ 1, 2, 2 });
-    ISliceLayer *s3 = network->addSlice(input, Dims3{ 0, 0, 1 }, Dims3{ inch, Yolo::INPUT_H / 2, Yolo::INPUT_W / 2 }, Dims3{ 1, 2, 2 });
-    ISliceLayer *s4 = network->addSlice(input, Dims3{ 0, 1, 1 }, Dims3{ inch, Yolo::INPUT_H / 2, Yolo::INPUT_W / 2 }, Dims3{ 1, 2, 2 });
+    ISliceLayer *s1 = network->addSlice(input, Dims3{ 0, 0, 0 }, Dims3{ inch, Yolo::INPUT_HEIGHT / 2, Yolo::INPUT_WIDTH / 2 }, Dims3{ 1, 2, 2 });
+    ISliceLayer *s2 = network->addSlice(input, Dims3{ 0, 1, 0 }, Dims3{ inch, Yolo::INPUT_HEIGHT / 2, Yolo::INPUT_WIDTH / 2 }, Dims3{ 1, 2, 2 });
+    ISliceLayer *s3 = network->addSlice(input, Dims3{ 0, 0, 1 }, Dims3{ inch, Yolo::INPUT_HEIGHT / 2, Yolo::INPUT_WIDTH / 2 }, Dims3{ 1, 2, 2 });
+    ISliceLayer *s4 = network->addSlice(input, Dims3{ 0, 1, 1 }, Dims3{ inch, Yolo::INPUT_HEIGHT / 2, Yolo::INPUT_WIDTH / 2 }, Dims3{ 1, 2, 2 });
     ITensor* inputTensors[] = { s1->getOutput(0), s2->getOutput(0), s3->getOutput(0), s4->getOutput(0) };
     auto cat = network->addConcatenation(inputTensors, 4);
     auto conv = convBlock(network, weightMap, *cat->getOutput(0), outch, ksize, 1, 1, lname + ".conv");
@@ -161,29 +163,6 @@ ILayer* SPP(INetworkDefinition *network, std::map<std::string, Weights>& weightM
     auto cv2 = convBlock(network, weightMap, *cat->getOutput(0), c2, 1, 1, 1, lname + ".cv2");
     return cv2;
 }
-
-int read_files_in_dir(const char *p_dir_name, std::vector<std::string> &file_names) {
-    DIR *p_dir = opendir(p_dir_name);
-    if (p_dir == nullptr) {
-        return -1;
-    }
-
-    struct dirent* p_file = nullptr;
-    while ((p_file = readdir(p_dir)) != nullptr) {
-        if (strcmp(p_file->d_name, ".") != 0 &&
-            strcmp(p_file->d_name, "..") != 0) {
-            //std::string cur_file_name(p_dir_name);
-            //cur_file_name += "/";
-            //cur_file_name += p_file->d_name;
-            std::string cur_file_name(p_file->d_name);
-            file_names.push_back(cur_file_name);
-        }
-    }
-
-    closedir(p_dir);
-    return 0;
-}
-
 std::vector<float> getAnchors(std::map<std::string, Weights>& weightMap){
     std::vector<float> anchors_yolo;
     Weights Yolo_Anchors = weightMap["model.24.anchor_grid"];
@@ -209,8 +188,8 @@ IPluginV2Layer* addYoLoLayer(INetworkDefinition *network, std::map<std::string, 
     PluginField pluginMultidata[4];
     int NetData[4];
     NetData[0] = Yolo::CLASS_NUM;
-    NetData[1] = Yolo::INPUT_W;
-    NetData[2] = Yolo::INPUT_H;
+    NetData[1] = Yolo::INPUT_WIDTH;
+    NetData[2] = Yolo::INPUT_HEIGHT;
     NetData[3] = Yolo::MAX_OUTPUT_BBOX_COUNT;
     pluginMultidata[0].data = NetData;
     pluginMultidata[0].length = 3;
@@ -220,8 +199,8 @@ IPluginV2Layer* addYoLoLayer(INetworkDefinition *network, std::map<std::string, 
     int plugindata[3][8];
     std::string names[3];
     for (int k = 1; k < 4; k++) {
-        plugindata[k - 1][0] = Yolo::INPUT_W / scale[k - 1];
-        plugindata[k - 1][1] = Yolo::INPUT_H / scale[k - 1];
+        plugindata[k - 1][0] = Yolo::INPUT_WIDTH / scale[k - 1];
+        plugindata[k - 1][1] = Yolo::INPUT_HEIGHT / scale[k - 1];
         for (int i = 2; i < 8; i++)
             plugindata[k - 1][i] = int(anchors_yolo[(k - 1) * 6 + i - 2]);
         pluginMultidata[k].data = plugindata[k - 1];
