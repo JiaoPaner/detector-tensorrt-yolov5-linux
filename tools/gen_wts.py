@@ -5,10 +5,10 @@ from utils.torch_utils import select_device
 # Initialize
 device = select_device('cpu')
 # Load model
-model = torch.load('./yolov5s.pt', map_location=device)['model'].float()  # load to FP32
+model = torch.load('/Volumes/storage/yolov5m.pt', map_location=device)['model'].float()  # load to FP32
 model.to(device).eval()
 
-f = open('yolov5s.wts', 'w')
+f = open('../model/yolov5s.wts', 'w')
 f.write('{}\n'.format(len(model.state_dict().keys())))
 for k, v in model.state_dict().items():
     vr = v.reshape(-1).cpu().numpy()

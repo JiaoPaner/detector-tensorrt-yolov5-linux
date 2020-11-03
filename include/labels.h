@@ -5,7 +5,7 @@
 #ifndef DETECTOR_LABELS_H
 #define DETECTOR_LABELS_H
 
-const std::vector<std::string> coco = {
+const std::vector<std::string> labels = {
         "person","bicycle","car","motorbike","aeroplane","bus","train","truck",
         "boat","traffic light","fire hydrant","stop sign","parking meter","bench",
         "bird","cat","dog","horse","sheep","cow","elephant","bear","zebra","giraffe",
@@ -16,9 +16,5 @@ const std::vector<std::string> coco = {
         "chair","sofa","pottedplant","bed","diningtable","toilet","tvmonitor","laptop","mouse","remote",
         "keyboard","cell phone","microwave","oven","toaster","sink","refrigerator","book",
         "clock","vase","scissors","teddy bear","hair drier","toothbrush"
-};
-
-const std::vector<std::string> labels = {
-        "head"
 };
 #endif //DETECTOR_LABELS_H

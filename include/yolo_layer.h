@@ -14,7 +14,9 @@ namespace Yolo{
         float anchors[CHECK_COUNT * 2];
     };
     static constexpr int MAX_OUTPUT_BBOX_COUNT = 1000;
-    static constexpr int CLASS_NUM = 1;
+
+    //update by model
+    static constexpr int CLASS_NUM = 80;
     static constexpr int INPUT_HEIGHT = 608;
     static constexpr int INPUT_WIDTH = 608;
 

@@ -9,12 +9,12 @@
 int main(){
 
     std::cout << "hello world" << std::endl;
-
+    //loadWeightsToEngineFile("../model/yolov5s.wts","yolov5s.engine");
     init("yolov5s.engine");
 
     auto start = std::chrono::system_clock::now();
 
-    char* result = detectByFile("../samples/PartA_00456.jpg");
+    char* result = detectByFile("/home/adminpc/jiaopan/resource/bus.jpg");
     std::cout << result << std::endl;
 
     auto end = std::chrono::system_clock::now();
