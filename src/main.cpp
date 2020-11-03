@@ -4,8 +4,9 @@
 
 #include <iostream>
 #include "yolov5.h"
-#include "yololayer.h"
+#include "yolo_layer.h"
 #include "common.h"
+#include "utils.h"
 #include "cuda_runtime_api.h"
 
 static const int OUTPUT_SIZE = Yolo::MAX_OUTPUT_BBOX_COUNT * sizeof(Yolo::Detection) / sizeof(float) + 1;  // we assume the yololayer outputs no more than MAX_OUTPUT_BBOX_COUNT boxes that conf >= 0.1

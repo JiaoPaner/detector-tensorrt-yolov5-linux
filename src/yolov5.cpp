@@ -7,7 +7,8 @@
 #include "cuda_runtime_api.h"
 #include "common.h"
 #include "logging.h"
-#include "yololayer.h"
+#include "yolo_layer.h"
+#include "utils.h"
 
 static Logger gLogger;
 const char* inputName = "data";
