@@ -22,6 +22,7 @@ cuda_add_library(layer SHARED ${PROJECT_SOURCE_DIR}/src/yolo_layer.cu)
 file(GLOB src src/*.cpp src/*.c src/*.cu include/*.h include/*.hpp include/tensorrt/*.h)
 set(SRC ${src})
 
-add_executable(detector ${SRC})
+#add_executable(detector ${SRC})
+add_library(detector SHARED ${SRC})
 
 target_link_libraries(detector ${OpenCV_LIBS} ${CUDA_LIBRARIES} layer nvinfer nvparsers nvinfer_plugin nvonnxparser)
