@@ -8,6 +8,7 @@ this repo tensorrt's version is TensorRT-7.0.0.11.Ubuntu-16.04.x86_64-gnu.cuda-1
 ### how to build
 1.add model.pt file to model dir <br>
 2.use tools/gen_wts.py generate model.wts file<br>
-3.use loadWeightsToEngineFile generate model.engine file(the example is in main.cpp) or you can call loadWeightsToEngineFile by python,java,etc.<br>
-4.please do init() method once before do anything <br>
+3.use loadWeightsToEngineFile(model.wts,engine_name) generate model.engine file(the example is in main.cpp) or you can call loadWeightsToEngineFile by python,java,etc.<br>
+4.please call init() method once before doing anything <br>
+5.the test/test.py is a example that how python call .so
 
