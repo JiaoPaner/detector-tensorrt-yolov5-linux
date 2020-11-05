@@ -103,7 +103,7 @@ char * Yolov5::doInference(cv::Mat image,float confThresh,int channels) {
 
     std::vector<Yolo::Detection> batch_res;
     nms(batch_res, prob, confThresh, 0.4);
-
+/*
     for (size_t j = 0; j < batch_res.size(); j++) {
         cv::Rect r = get_rect(image, batch_res[j].bbox);
         cv::rectangle(image, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
@@ -111,7 +111,7 @@ char * Yolov5::doInference(cv::Mat image,float confThresh,int channels) {
         cv::putText(image, labels.at(labelIndex).c_str(), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
     }
     cv::imwrite("_output.jpg", image);
-
+*/
     cJSON  *result = cJSON_CreateObject(), *items = cJSON_CreateArray();
     for (int i = 0; i < batch_res.size(); ++i) {
         cJSON  *item = cJSON_CreateObject();
