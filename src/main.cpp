@@ -20,5 +20,13 @@ int main(){
     auto end = std::chrono::system_clock::now();
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms" << std::endl;
 
+    auto begin = std::chrono::system_clock::now();
+
+    char* code = detectByFile("/home/adminpc/jiaopan/resource/bus.jpg");
+    std::cout << code << std::endl;
+
+    auto ending = std::chrono::system_clock::now();
+    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(ending - begin).count() << "ms" << std::endl;
+
     return 0;
 }

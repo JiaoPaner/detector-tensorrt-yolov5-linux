@@ -71,17 +71,6 @@ void Yolov5::init(std::string engineFile) {
     assert(this->context != nullptr);
     delete[] trtModelStream;
     assert(this->engine->getNbBindings() == 2);
-}
-
-char * Yolov5::doInference(cv::Mat image,float confThresh,int channels) {
-
-    size_t size = channels * Yolo::INPUT_HEIGHT * Yolo::INPUT_WIDTH;
-
-    float input[size];
-    createInputImage(input,image);
-
-    float prob[1 * OUTPUT_SIZE];
-
     // In order to bind the buffers, we need to know the names of the input and output tensors.
     // Note that indices are guaranteed to be less than IEngine::getNbBindings()
     const int inputIndex = this->engine->getBindingIndex(inputName);
@@ -94,6 +83,16 @@ char * Yolov5::doInference(cv::Mat image,float confThresh,int channels) {
     // Create stream
 
     CHECK(cudaStreamCreate(&this->stream));
+}
+
+char * Yolov5::doInference(cv::Mat image,float confThresh,int channels) {
+
+    size_t size = channels * Yolo::INPUT_HEIGHT * Yolo::INPUT_WIDTH;
+
+    float input[size];
+    createInputImage(input,image);
+
+    float prob[1 * OUTPUT_SIZE];
 
     // DMA input batch data to device, infer on the batch asynchronously, and DMA output back to host
     CHECK(cudaMemcpyAsync(this->buffers[0], input, 1 * size * sizeof(float), cudaMemcpyHostToDevice, stream));
