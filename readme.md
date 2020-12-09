@@ -1,4 +1,5 @@
-this repo tensorrt's version is TensorRT-7.0.0.11.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn7.6.tar.gz
+tensorrt's version is TensorRT-7.0.0.11.Ubuntu-16.04.x86_64-gnu.cuda-10.2.cudnn7.6.tar.gz<br>
+**yolov5 version is v3.0**
 #### requirements
 * cuda 10.2+ 
 * cudnn 7.6+
