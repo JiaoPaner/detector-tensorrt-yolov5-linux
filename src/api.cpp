@@ -3,32 +3,34 @@
 //
 
 #include "api.h"
-#include "yolov5.h"
+#include "detector.h"
 #include "cJSON.h"
-#include "utils.h"
 
-static  Yolov5 yolov5;
+static  Detector detector;
 
-void loadWeightsToEngineFile(const char* weightsFile,const char* engineFileName){
-    yolov5.loadWeightsToEngineFile(weightsFile,engineFileName);
-}
-void init(const char* model_path){
-    std::cout << "loading model:" << model_path << std::endl;
-    yolov5.init(model_path);
-    std::cout << "this is a detector lib by jiaopaner@qq.com" << std::endl;
-}
-void unload(){
-    yolov5.unload();
-}
+cv::Mat base64ToMat(std::string &base64_data);
+std::string base64Decode(const char *data, int dataByte);
+
 
 /**
  * detection api
  */
-char* detectByBase64(const char* base64_data, float min_score){
+void loadWeightsToEngineFile(const char* weightsFile,const char* engineFileName){
+    detector.loadWeightsToEngineFile(weightsFile,engineFileName);
+}
+void init(const char* engineFile){
+    std::cout << "loading engineFile:" << engineFile << std::endl;
+    detector.init(engineFile);
+}
+void unload(){
+    detector.unload();
+}
+
+char* detectByBase64(const char* base64_data){
     try {
         std::string data(base64_data);
         cv::Mat image = base64ToMat(data);
-        return yolov5.doInference(image,min_score);
+        return detector.doInference(image);
     }
     catch (const char* msg) {
         cJSON* result = cJSON_CreateObject(), * data = cJSON_CreateArray();;
@@ -38,10 +40,10 @@ char* detectByBase64(const char* base64_data, float min_score){
         return cJSON_PrintUnformatted(result);
     }
 }
-char* detectByFile(const char* file, float min_score){
+char* detectByFile(const char* file){
     try {
         cv::Mat image = cv::imread(file);
-        return yolov5.doInference(image,min_score);
+        return detector.doInference(image);
     }
     catch (const char* msg) {
         cJSON* result = cJSON_CreateObject(), * data = cJSON_CreateArray();;
@@ -50,4 +52,55 @@ char* detectByFile(const char* file, float min_score){
         cJSON_AddItemToObject(result, "data", data);
         return cJSON_PrintUnformatted(result);
     }
+}
+
+/**
+ * detection api end
+ */
+cv::Mat base64ToMat(std::string &base64_data) {
+    cv::Mat img;
+    std::string s_mat;
+    s_mat = base64Decode(base64_data.data(), base64_data.size());
+    std::vector<char> base64_img(s_mat.begin(), s_mat.end());
+    img = cv::imdecode(base64_img,1);//CV_LOAD_IMAGE_COLOR
+    return img;
+}
+
+std::string base64Decode(const char *Data, int DataByte) {
+    const char DecodeTable[] ={
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            62, // '+'
+            0, 0, 0,
+            63, // '/'
+            52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // '0'-'9'
+            0, 0, 0, 0, 0, 0, 0,
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+            13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // 'A'-'Z'
+            0, 0, 0, 0, 0, 0,
+            26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+            39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, // 'a'-'z'
+    };
+    std::string strDecode;
+    int nValue;
+    int i = 0;
+    while (i < DataByte){
+        if (*Data != '\r' && *Data != '\n'){
+            nValue = DecodeTable[*Data++] << 18;
+            nValue += DecodeTable[*Data++] << 12;strDecode += (nValue & 0x00FF0000) >> 16;
+            if (*Data != '='){
+                nValue += DecodeTable[*Data++] << 6;strDecode += (nValue & 0x0000FF00) >> 8;
+                if (*Data != '='){
+                    nValue += DecodeTable[*Data++];
+                    strDecode += nValue & 0x000000FF;
+                }
+            }
+            i += 4;
+        }
+        else{
+            Data++;
+            i++;
+        }
+    }
+    return strDecode;
 }
