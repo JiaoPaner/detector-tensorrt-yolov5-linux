@@ -72,23 +72,21 @@ void Detector::init(std::string engineFile) {
     delete[] trtModelStream;
     assert(this->engine->getNbBindings() == 2);
 
-    const int inputIndex = this->engine->getBindingIndex(INPUT_BLOB_NAME);
-    const int outputIndex = this->engine->getBindingIndex(OUTPUT_BLOB_NAME);
-    assert(inputIndex == 0);
-    assert(outputIndex == 1);
-
-    //todo
-    // Create GPU buffers on device
-    CUDA_CHECK(cudaMalloc(&this->buffers[inputIndex], BATCH_SIZE * 3 * INPUT_H * INPUT_W * sizeof(float)));
-    CUDA_CHECK(cudaMalloc(&this->buffers[outputIndex], BATCH_SIZE * OUTPUT_SIZE * sizeof(float)));
-    // Create stream
-    CUDA_CHECK(cudaStreamCreate(&this->stream));
 }
 
 //doInference(*context, stream, buffers, data, prob, BATCH_SIZE);
 
 char* Detector::doInference(cv::Mat image) {
     cudaSetDevice(DEVICE);
+    // Create GPU buffers on device
+    const int inputIndex = this->engine->getBindingIndex(INPUT_BLOB_NAME);
+    const int outputIndex = this->engine->getBindingIndex(OUTPUT_BLOB_NAME);
+    assert(inputIndex == 0);
+    assert(outputIndex == 1);
+    CUDA_CHECK(cudaMalloc(&this->buffers[inputIndex], BATCH_SIZE * 3 * INPUT_H * INPUT_W * sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&this->buffers[outputIndex], BATCH_SIZE * OUTPUT_SIZE * sizeof(float)));
+    // Create stream
+    CUDA_CHECK(cudaStreamCreate(&this->stream));
 
     float input[BATCH_SIZE * 3 * INPUT_H * INPUT_W];
     this->createInputData(input,image);
@@ -101,14 +99,10 @@ char* Detector::doInference(cv::Mat image) {
 
     std::vector<Yolo::Detection> batch_res;
     nms(batch_res, output, CONF_THRESH, NMS_THRESH);
-/**/
-    for (size_t j = 0; j < batch_res.size(); j++) {
-        cv::Rect r = get_rect(image, batch_res[j].bbox);
-        cv::rectangle(image, r, cv::Scalar(0x27, 0xC1, 0x36), 2);
-        int labelIndex = batch_res[j].class_id;
-        cv::putText(image, labels.at(labelIndex).c_str(), cv::Point(r.x, r.y - 1), cv::FONT_HERSHEY_PLAIN, 1.2, cv::Scalar(0xFF, 0xFF, 0xFF), 2);
-    }
-    cv::imwrite("_output.jpg", image);
+
+    cudaStreamDestroy(this->stream);
+    CUDA_CHECK(cudaFree(this->buffers[inputIndex]));
+    CUDA_CHECK(cudaFree(this->buffers[outputIndex]));
 
     cJSON  *result = cJSON_CreateObject(), *items = cJSON_CreateArray();
     for (int i = 0; i < batch_res.size(); ++i) {

@@ -40,6 +40,6 @@ make
 ```
 use loadWeightsToEngineFile(model.wts,engine_name) method in include/api.h generate model.engine file(the example is in main.cpp)<br>
 init() method in include/api.h is to load engine file ,please call it once before doing anything <br>
-the test/test.py is a example that how python call .so
+the test/test.py is a example that how python call .so (modify CMakeLists.txt)
 
 
