@@ -33,8 +33,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 file(GLOB src src/*.cpp src/*.c include/*.h include/*.hpp include/tensorrt/*.h)
 set(SRC ${src})
 
-add_executable(detector ${SRC})
-#add_library(detector SHARED ${SRC})
+#add_executable(detector ${SRC})
+add_library(detector SHARED ${SRC})
 
 target_link_libraries(detector ${OpenCV_LIBS} plugins nvinfer cudart)
 

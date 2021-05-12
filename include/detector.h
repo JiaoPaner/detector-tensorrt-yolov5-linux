@@ -21,7 +21,7 @@ class Detector {
     private:
         static int get_width(int x, float gw, int divisor = 8);
         static int get_depth(int x, float gd);
-        void createInputData(float *data,cv::Mat image);
+        void createInputData(std::vector<float> &input,cv::Mat image);
         void APIToModel(unsigned int maxBatchSize, IHostMemory** modelStream, float& gd, float& gw, std::string& wts_name);
         ICudaEngine* buildEngine(unsigned int maxBatchSize, IBuilder* builder, IBuilderConfig* config, DataType dt, float& gd, float& gw, std::string& weightsFile);
         IRuntime* runtime{nullptr};

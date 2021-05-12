@@ -74,8 +74,6 @@ void Detector::init(std::string engineFile) {
 
 }
 
-//doInference(*context, stream, buffers, data, prob, BATCH_SIZE);
-
 char* Detector::doInference(cv::Mat image) {
     cudaSetDevice(DEVICE);
     // Create GPU buffers on device
@@ -88,11 +86,12 @@ char* Detector::doInference(cv::Mat image) {
     // Create stream
     CUDA_CHECK(cudaStreamCreate(&this->stream));
 
-    float input[BATCH_SIZE * 3 * INPUT_H * INPUT_W];
+    std::vector<float> input;
     this->createInputData(input,image);
+
     float output[BATCH_SIZE * OUTPUT_SIZE];
 
-    CUDA_CHECK(cudaMemcpyAsync(this->buffers[0], input, BATCH_SIZE * 3 * INPUT_H * INPUT_W * sizeof(float), cudaMemcpyHostToDevice, this->stream));
+    CUDA_CHECK(cudaMemcpyAsync(this->buffers[0], input.data(), BATCH_SIZE * 3 * INPUT_H * INPUT_W * sizeof(float), cudaMemcpyHostToDevice, this->stream));
     this->context->enqueue(BATCH_SIZE, this->buffers, stream, nullptr);
     CUDA_CHECK(cudaMemcpyAsync(output, this->buffers[1], BATCH_SIZE * OUTPUT_SIZE * sizeof(float), cudaMemcpyDeviceToHost, this->stream));
     cudaStreamSynchronize(this->stream);
@@ -258,18 +257,34 @@ int Detector::get_width(int x, float gw, int divisor) {
     return (int(x * gw / divisor) + 1) * divisor;
 }
 
-void Detector::createInputData(float *input,cv::Mat image) {
+void Detector::createInputData(std::vector<float> &input,cv::Mat image) {
+//    cv::Mat pr_img = preprocess_img(image, INPUT_W, INPUT_H); // letterbox BGR to RGB
+//    int i = 0;
+//    for (int row = 0; row < INPUT_H; ++row) {
+//        uchar* uc_pixel = pr_img.data + row * pr_img.step;
+//        for (int col = 0; col < INPUT_W; ++col) {
+//            input[i] = (float)uc_pixel[2] / 255.0;
+//            input[i + INPUT_H * INPUT_W] = (float)uc_pixel[1] / 255.0;
+//            input[i + 2 * Yolo::INPUT_H * INPUT_W] = (float)uc_pixel[0] / 255.0;
+//            uc_pixel += 3;
+//            i++;
+//        }
+//
+//    }
     cv::Mat pr_img = preprocess_img(image, INPUT_W, INPUT_H); // letterbox BGR to RGB
+    std::vector<float> input_image(INPUT_W * INPUT_H * 3,0.f);
     int i = 0;
     for (int row = 0; row < INPUT_H; ++row) {
         uchar* uc_pixel = pr_img.data + row * pr_img.step;
         for (int col = 0; col < INPUT_W; ++col) {
-            input[i] = (float)uc_pixel[2] / 255.0;
-            input[i + INPUT_H * INPUT_W] = (float)uc_pixel[1] / 255.0;
-            input[i + 2 * Yolo::INPUT_H * INPUT_W] = (float)uc_pixel[0] / 255.0;
+            input_image[i] = (float)uc_pixel[2] / 255.0;
+            input_image[i + INPUT_W * INPUT_H] = (float)uc_pixel[1] / 255.0;
+            input_image[i + 2 * INPUT_W * INPUT_H] = (float)uc_pixel[0] / 255.0;
             uc_pixel += 3;
             ++i;
         }
     }
+    input = input_image;
 }
+
 

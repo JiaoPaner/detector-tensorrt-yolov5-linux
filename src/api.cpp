@@ -11,7 +11,6 @@ static  Detector detector;
 cv::Mat base64ToMat(std::string &base64_data);
 std::string base64Decode(const char *data, int dataByte);
 
-
 /**
  * detection api
  */
