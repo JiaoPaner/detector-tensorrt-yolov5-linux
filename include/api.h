@@ -19,8 +19,8 @@ void unload();
 /**
  * detection api
  */
-char* detectByBase64(const char* base64_data,const char* rois="");
-char* detectByFile(const char* file,const char* rois="");
+char* detectByBase64(const char* base64_data,const char* rois = nullptr);
+char* detectByFile(const char* file,const char* rois = nullptr);
 
 }
 
