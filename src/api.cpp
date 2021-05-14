@@ -25,10 +25,34 @@ void unload(){
     detector.unload();
 }
 
-char* detectByBase64(const char* base64_data){
+char* detectByBase64(const char* base64_data,const char* rois){
     try {
         std::string data(base64_data);
         cv::Mat image = base64ToMat(data);
+        if(rois != ""){
+            cv::Mat dst;
+            cv::Mat roi = cv::Mat::zeros(image.size(),CV_8U);
+            std::vector<std::vector<cv::Point>> contour;
+            std::vector<cv::Point> pts;
+
+            cJSON *root;
+            root = cJSON_Parse(rois);
+            cJSON *data = cJSON_GetObjectItem(root, "rois");
+            int size = cJSON_GetArraySize(data);
+
+            for (int i = 0; i < size; ++i) {
+                cJSON *item = cJSON_GetArrayItem(data, i);
+                int x = cJSON_GetObjectItem(item, "x")->valueint;
+                int y = cJSON_GetObjectItem(item, "y")->valueint;
+                pts.push_back(cv::Point(x,y));
+            }
+
+            contour.push_back(pts);
+            drawContours(roi,contour,0,cv::Scalar::all(255),-1);
+            image.copyTo(dst,roi);
+
+            return detector.doInference(dst);
+        }
         return detector.doInference(image);
     }
     catch (const char* msg) {
@@ -39,9 +63,33 @@ char* detectByBase64(const char* base64_data){
         return cJSON_PrintUnformatted(result);
     }
 }
-char* detectByFile(const char* file){
+char* detectByFile(const char* file,const char* rois){
     try {
         cv::Mat image = cv::imread(file);
+        if(rois != ""){
+            cv::Mat dst;
+            cv::Mat roi = cv::Mat::zeros(image.size(),CV_8U);
+            std::vector<std::vector<cv::Point>> contour;
+            std::vector<cv::Point> pts;
+
+            cJSON *root;
+            root = cJSON_Parse(rois);
+            cJSON *data = cJSON_GetObjectItem(root, "rois");
+            int size = cJSON_GetArraySize(data);
+
+            for (int i = 0; i < size; ++i) {
+                cJSON *item = cJSON_GetArrayItem(data, i);
+                int x = cJSON_GetObjectItem(item, "x")->valueint;
+                int y = cJSON_GetObjectItem(item, "y")->valueint;
+                pts.push_back(cv::Point(x,y));
+            }
+
+            contour.push_back(pts);
+            drawContours(roi,contour,0,cv::Scalar::all(255),-1);
+            image.copyTo(dst,roi);
+
+            return detector.doInference(dst);
+        }
         return detector.doInference(image);
     }
     catch (const char* msg) {

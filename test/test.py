@@ -17,7 +17,7 @@ def image_to_base64(image):
 
 #test stream
 def pushFrame(queue):
-    cap = cv2.VideoCapture("/home/adminpc/jiaopan/projects/videos/dongjiaojiyi.mp4")
+    cap = cv2.VideoCapture("rtmp://172.28.192.181:7892/live/51010845001320227600@192.168.62.98:5065")
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -35,7 +35,7 @@ def pushFrame(queue):
                '-pix_fmt', 'yuv420p',
                '-preset', 'ultrafast',
                '-f', 'flv',
-               "rtmp://172.28.28.168/live/test"]
+               "rtmp://172.28.28.168/live/51010845001320227600"]
     while True:
         if len(command) > 0:
             # 管道配置
@@ -54,7 +54,7 @@ def readFrame(queue):
     detect = so.detectByBase64
     detect.restype = ctypes.c_char_p
 
-    cap = cv2.VideoCapture("/home/adminpc/jiaopan/projects/videos/dongjiaojiyi.mp4")
+    cap = cv2.VideoCapture("rtmp://172.28.192.181:7892/live/51010845001320227600@192.168.62.98:5065")
     index = 0
 
     if cap.isOpened():
@@ -123,5 +123,5 @@ def file_test():
     cv2.imwrite("output.jpg",image)
 
 if __name__ == '__main__':
-    file_test()
+    #file_test()
     run();
